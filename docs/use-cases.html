@@ -48,13 +48,30 @@
         this.metrics = new CallMetrics();
     }
 
+    // Custom error types
+    static CallHandlingError = class extends Error {
+        constructor(message, code) {
+            super(message);
+            this.name = 'CallHandlingError';
+            this.code = code;
+        }
+    };
+
     async handleIncomingCall(call) {
         try {
+            if (!call?.id) {
+                throw new CallCenter.CallHandlingError(
+                    'Invalid call object',
+                    'INVALID_CALL'
+                );
+            }
+
             // Initial greeting
             const greeting = await this.voiceService.generateSpeech({
                 text: "Thank you for calling. How can I help you today?",
                 voice: "customer_service_1",
-                speed: 1.0
+                speed: 1.0,
+                fallbackVoice: "default_1" // Fallback voice if primary unavailable
             });
             
             // Process customer intent
@@ -62,28 +79,48 @@
             const intent = await this.nlp.detectIntent(transcript);
             
             // Track metrics
-            this.metrics.logInteraction({
+            await this.metrics.logInteraction({
                 callId: call.id,
                 intent,
-                duration: call.duration
+                duration: call.duration,
+                timestamp: new Date().toISOString()
             });
 
             return this.routeCall(intent, call);
         } catch (error) {
             console.error(`Call handling error: ${error.message}`);
-            return this.escalateToHuman(call);
+            await this.metrics.logError(error);
+            return this.escalateToHuman(call, error);
         }
     }
 
     async routeCall(intent, call) {
-        switch(intent.type) {
-            case 'billing':
-                return this.handleBillingQuery(call);
-            case 'support':
-                return this.handleTechnicalSupport(call);
-            default:
-                return this.escalateToHuman(call);
-        }
+        const handlers = {
+            billing: this.handleBillingQuery.bind(this),
+            support: this.handleTechnicalSupport.bind(this),
+            sales: this.handleSalesInquiry.bind(this),
+            complaint: this.handleComplaint.bind(this)
+        };
+
+        const handler = handlers[intent.type] || this.escalateToHuman.bind(this);
+        return handler(call);
+    }
+
+    async escalateToHuman(call, error = null) {
+        await this.metrics.logEscalation({
+            callId: call.id,
+            reason: error?.message || 'Unknown intent',
+            timestamp: new Date().toISOString()
+        });
+        
+        return {
+            action: 'transfer',
+            department: 'customer_service',
+            context: {
+                callHistory: call.history,
+                error: error?.message
+            }
+        };
     }
 }</code></pre>
                     <h4>Key Features</h4>
@@ -135,21 +172,48 @@ assistant.addResponse('greeting', {
         this.voiceService = new VoiceService();
         this.calendar = new CalendarAPI();
         this.patientRecords = new EMRSystem();
+        this.notificationService = new NotificationService();
     }
+
+    // Custom error types
+    static SchedulingError = class extends Error {
+        constructor(message, code) {
+            super(message);
+            this.name = 'SchedulingError';
+            this.code = code;
+        }
+    };
 
     async scheduleAppointment(patientRequest) {
         try {
+            if (!patientRequest?.patientId) {
+                throw new MedicalScheduler.SchedulingError(
+                    'Invalid patient request',
+                    'INVALID_REQUEST'
+                );
+            }
+
             // Verify patient identity
             const patient = await this.patientRecords.verifyPatient(
-                patientRequest.patientId
+                patientRequest.patientId,
+                { requireActive: true }
             );
 
             // Get available slots considering doctor availability
             const slots = await this.calendar.getAvailableSlots({
                 doctorId: patient.primaryCare,
-                duration: 30, // minutes
-                daysAhead: 7
+                duration: patientRequest.duration || 30, // minutes
+                daysAhead: 7,
+                excludeHolidays: true,
+                considerPreferences: true
             });
+
+            if (!slots.length) {
+                throw new MedicalScheduler.SchedulingError(
+                    'No available slots found',
+                    'NO_SLOTS'
+                );
+            }
 
             // Present options to patient
             const slotOptions = this.formatSlots(slots);
@@ -157,18 +221,23 @@ assistant.addResponse('greeting', {
                 text: `I found these times available: ${slotOptions}. 
                        Which time works best for you?`,
                 expectedResponseType: 'datetime',
-                confirmationRequired: true
+                confirmationRequired: true,
+                maxRetries: 3
             });
 
             // Book appointment and send confirmation
-            const booking = await this.processBooking(confirmation);
+            const booking = await this.processBooking(confirmation, patient);
             await this.sendConfirmation(booking, patient);
             
             return booking;
         } catch (error) {
             console.error(`Scheduling error: ${error.message}`);
-            throw new AppointmentError(
-                'Unable to schedule appointment. Please try again.'
+            if (error instanceof MedicalScheduler.SchedulingError) {
+                throw error;
+            }
+            throw new MedicalScheduler.SchedulingError(
+                'Unable to schedule appointment. Please try again.',
+                'SYSTEM_ERROR'
             );
         }
     }
@@ -176,11 +245,33 @@ assistant.addResponse('greeting', {
     async sendConfirmation(booking, patient) {
         const message = `Your appointment is confirmed for 
                         ${booking.datetime.toLocaleString()}`;
+        
+        // Send confirmations in parallel
         await Promise.all([
-            this.voiceService.generateSpeech({ text: message }),
+            this.voiceService.generateSpeech({ 
+                text: message,
+                voice: patient.preferredVoice || 'default'
+            }),
             this.calendar.sendReminder(booking),
-            this.patientRecords.updateAppointments(patient.id, booking)
+            this.patientRecords.updateAppointments(patient.id, booking),
+            this.notificationService.sendMultiChannel({
+                patient,
+                message,
+                channels: ['sms', 'email', 'voice']
+            })
         ]);
+    }
+
+    formatSlots(slots) {
+        return slots
+            .map(slot => slot.datetime.toLocaleString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            }))
+            .join(', ');
     }
 }</code></pre>
                     <h4>Features</h4>
@@ -206,24 +297,49 @@ assistant.addResponse('greeting', {
         this.voiceService = new VoiceService();
         this.nlp = new NLPProcessor();
         this.learningModel = new AdaptiveLearning();
+        this.feedbackGenerator = new FeedbackGenerator();
     }
+
+    // Custom error types
+    static TutoringError = class extends Error {
+        constructor(message, code) {
+            super(message);
+            this.name = 'TutoringError';
+            this.code = code;
+        }
+    };
 
     async provideFeedback(studentAudio, lessonContext) {
         try {
+            if (!studentAudio || !lessonContext?.studentId) {
+                throw new LanguageTutor.TutoringError(
+                    'Invalid lesson context',
+                    'INVALID_CONTEXT'
+                );
+            }
+
             // Transcribe and analyze student's speech
-            const transcription = await this.voiceService.transcribe(studentAudio);
+            const transcription = await this.voiceService.transcribe(studentAudio, {
+                language: lessonContext.targetLanguage,
+                quality: 'high',
+                noiseReduction: true
+            });
+
             const analysis = await this.nlp.analyzePronounciation(transcription, {
                 nativeLanguage: lessonContext.nativeLanguage,
                 targetLanguage: lessonContext.targetLanguage,
-                proficiencyLevel: lessonContext.level
+                proficiencyLevel: lessonContext.level,
+                focusAreas: lessonContext.focusAreas,
+                lessonObjectives: lessonContext.objectives
             });
 
             // Generate personalized feedback
-            const feedback = await this.generateFeedback(analysis, {
-                tone: 'encouraging',
-                detail: 'high',
+            const feedback = await this.feedbackGenerator.generate(analysis, {
+                tone: lessonContext.preferredTone || 'encouraging',
+                detail: lessonContext.detailLevel || 'high',
                 includeExamples: true,
-                focusAreas: analysis.improvementAreas
+                focusAreas: analysis.improvementAreas,
+                language: lessonContext.preferredLanguage
             });
 
             // Update learning path
@@ -231,24 +347,54 @@ assistant.addResponse('greeting', {
                 studentId: lessonContext.studentId,
                 lessonId: lessonContext.lessonId,
                 performance: analysis.score,
-                areas: analysis.improvementAreas
+                areas: analysis.improvementAreas,
+                timestamp: new Date().toISOString(),
+                duration: lessonContext.duration
             });
+
+            const nextLesson = await this.learningModel.getNextLesson(lessonContext);
 
             return {
                 feedback,
-                nextLesson: await this.learningModel.getNextLesson(lessonContext)
+                nextLesson,
+                performance: analysis.score,
+                improvementAreas: analysis.improvementAreas,
+                recommendations: this.generateRecommendations(analysis)
             };
         } catch (error) {
             console.error(`Feedback generation error: ${error.message}`);
+            await this.logError(error, lessonContext);
             return this.getFallbackFeedback(lessonContext);
         }
     }
 
     async getFallbackFeedback(context) {
+        const baseMessage = "Let's try that again. Remember to speak clearly.";
+        const feedback = context?.preferredLanguage === context?.nativeLanguage ?
+            baseMessage :
+            await this.voiceService.translate(baseMessage, context.nativeLanguage);
+
         return {
-            feedback: "Let's try that again. Remember to speak clearly.",
-            nextLesson: context.currentLesson
+            feedback,
+            nextLesson: context?.currentLesson,
+            isError: true
         };
+    }
+
+    generateRecommendations(analysis) {
+        return {
+            practiceExercises: this.learningModel.getExercises(analysis),
+            resourceLinks: this.learningModel.getResources(analysis),
+            studyTips: this.generateStudyTips(analysis)
+        };
+    }
+
+    async logError(error, context) {
+        await this.learningModel.logError({
+            error: error.message,
+            context,
+            timestamp: new Date().toISOString()
+        });
     }
 }</code></pre>
                     <h4>Features</h4>
