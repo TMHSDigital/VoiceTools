@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+Disallow: /assets/
+Disallow: /.htaccess
+
+Sitemap: https://aivoicetech.guide/sitemap.xml
+
+# Crawl-delay for heavy crawlers
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: MJ12bot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+
+# Disallow search-related pages
+Disallow: /search
+Disallow: /*?q=* 

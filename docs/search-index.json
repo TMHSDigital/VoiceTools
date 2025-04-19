@@ -1,0 +1,26 @@
+[
+    {
+        "title": "AI Voice Technology Guide",
+        "url": "/index.html",
+        "content": "Comprehensive guide for implementing AI voice technology in business communications. Learn about voice synthesis, recognition, and automation.",
+        "excerpt": "Get started with AI voice technology implementation..."
+    },
+    {
+        "title": "Phone Automation Guide",
+        "url": "/phone-automation.html",
+        "content": "Complete guide to call center automation, IVR systems, and voice bots. Learn about implementing automated phone systems.",
+        "excerpt": "Discover how to automate your call center operations..."
+    },
+    {
+        "title": "Enterprise Solutions",
+        "url": "/enterprise.html",
+        "content": "Enterprise-grade voice technology solutions including system architecture, security, deployment, and monitoring.",
+        "excerpt": "Scale your voice technology infrastructure..."
+    },
+    {
+        "title": "Voice Technology Glossary",
+        "url": "/glossary.html",
+        "content": "Comprehensive glossary of AI voice technology terms including ASR, TTS, NLP, Voice Synthesis, IVR, and more.",
+        "excerpt": "Learn key terminology in voice technology..."
+    }
+] 
