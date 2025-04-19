@@ -4,244 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Voice Technology Guide - TM Hospitality Strategies</title>
-    <style>
-        :root {
-            --primary-color: #2c3e50;
-            --accent-color: #3498db;
-            --text-color: #333;
-            --light-bg: #f8f9fa;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: var(--text-color);
-        }
-
-        header {
-            background: var(--primary-color);
-            color: white;
-            padding: 1rem;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-        }
-
-        nav {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .menu-toggle {
-            display: none;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-
-        nav ul {
-            list-style: none;
-            display: flex;
-            gap: 2rem;
-        }
-
-        nav a {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        nav a:hover {
-            color: var(--accent-color);
-        }
-
-        main {
-            max-width: 1200px;
-            margin: 6rem auto 2rem;
-            padding: 0 1rem;
-        }
-
-        .hero {
-            text-align: center;
-            padding: 3rem 1rem;
-            background: var(--light-bg);
-            border-radius: 8px;
-            margin-bottom: 3rem;
-        }
-
-        .hero h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            color: var(--primary-color);
-        }
-
-        .quick-links {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            margin: 3rem 0;
-        }
-
-        .quick-link {
-            padding: 1.5rem;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
-        }
-
-        .quick-link:hover {
-            transform: translateY(-5px);
-        }
-
-        .quick-link a {
-            color: var(--accent-color);
-            text-decoration: none;
-            font-weight: 500;
-            display: inline-block;
-            margin-top: 1rem;
-        }
-
-        .features {
-            margin: 3rem 0;
-        }
-
-        .features ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .features li {
-            margin: 1rem 0;
-            padding-left: 1.5rem;
-            position: relative;
-        }
-
-        .features li::before {
-            content: "→";
-            position: absolute;
-            left: 0;
-            color: var(--accent-color);
-        }
-
-        .about {
-            background: var(--light-bg);
-            padding: 2rem;
-            border-radius: 8px;
-            margin: 3rem 0;
-        }
-
-        footer {
-            background: var(--primary-color);
-            color: white;
-            padding: 2rem;
-            margin-top: 4rem;
-            text-align: center;
-        }
-
-        footer a {
-            color: var(--accent-color);
-            text-decoration: none;
-        }
-
-        footer a:hover {
-            text-decoration: underline;
-        }
-
-        @media (max-width: 768px) {
-            .menu-toggle {
-                display: block;
-            }
-
-            nav ul {
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                background: var(--primary-color);
-                flex-direction: column;
-                padding: 1rem;
-                gap: 1rem;
-            }
-
-            nav ul.active {
-                display: flex;
-            }
-
-            .hero h1 {
-                font-size: 2rem;
-            }
-
-            .quick-links {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <header>
         <nav>
-            <div class="logo">TMHS Digital</div>
+            <div class="logo">
+                <i class="fas fa-microphone-alt"></i>
+                TMHS Digital
+            </div>
             <button class="menu-toggle" onclick="toggleMenu()">☰</button>
             <ul>
-                <li><a href="quickstart.html">Quick Start</a></li>
-                <li><a href="voice-providers.html">Providers</a></li>
-                <li><a href="technical-guides.html">Technical Guides</a></li>
-                <li><a href="use-cases.html">Use Cases</a></li>
+                <li><a href="quickstart.html"><i class="fas fa-rocket"></i> Quick Start</a></li>
+                <li><a href="voice-providers.html"><i class="fas fa-server"></i> Providers</a></li>
+                <li><a href="technical-guides.html"><i class="fas fa-code"></i> Technical Guides</a></li>
+                <li><a href="use-cases.html"><i class="fas fa-lightbulb"></i> Use Cases</a></li>
             </ul>
         </nav>
     </header>
 
     <main>
         <section class="hero">
-            <h1>AI Voice Technology Guide</h1>
+            <h1><i class="fas fa-microphone-alt"></i> AI Voice Technology Guide</h1>
             <p>A comprehensive resource for implementing AI voice technologies in your applications</p>
         </section>
 
         <section class="quick-links">
             <div class="quick-link">
-                <h2>Quick Start Guide</h2>
-                <p>Get started with basic implementation steps</p>
-                <a href="quickstart.html">Learn More →</a>
+                <h2><i class="fas fa-rocket"></i> Quick Start Guide</h2>
+                <p>Get started with basic implementation steps and examples to quickly integrate voice technologies.</p>
+                <a href="quickstart.html">Get Started →</a>
             </div>
             <div class="quick-link">
-                <h2>Voice Providers</h2>
-                <p>Compare and choose voice service providers</p>
-                <a href="voice-providers.html">Learn More →</a>
+                <h2><i class="fas fa-server"></i> Voice Providers</h2>
+                <p>Compare features and pricing of leading voice service providers to choose the best fit.</p>
+                <a href="voice-providers.html">Compare Providers →</a>
             </div>
             <div class="quick-link">
-                <h2>Technical Guides</h2>
-                <p>Detailed implementation and best practices</p>
-                <a href="technical-guides.html">Learn More →</a>
+                <h2><i class="fas fa-code"></i> Technical Guides</h2>
+                <p>Detailed implementation guides, best practices, and code examples for developers.</p>
+                <a href="technical-guides.html">View Guides →</a>
             </div>
             <div class="quick-link">
-                <h2>Use Cases</h2>
-                <p>Real-world implementation examples</p>
-                <a href="use-cases.html">Learn More →</a>
+                <h2><i class="fas fa-lightbulb"></i> Use Cases</h2>
+                <p>Explore real-world applications and success stories of voice technology implementation.</p>
+                <a href="use-cases.html">Explore Cases →</a>
             </div>
         </section>
 
         <section class="features">
             <h2>Features</h2>
             <ul>
-                <li>Comprehensive voice technology implementation guide</li>
-                <li>Real-world use cases and examples</li>
-                <li>Security and performance best practices</li>
-                <li>Testing and deployment strategies</li>
-                <li>Monitoring and logging solutions</li>
+                <li><i class="fas fa-book"></i> Comprehensive voice technology implementation guide</li>
+                <li><i class="fas fa-tasks"></i> Real-world use cases and examples</li>
+                <li><i class="fas fa-shield-alt"></i> Security and performance best practices</li>
+                <li><i class="fas fa-vial"></i> Testing and deployment strategies</li>
+                <li><i class="fas fa-chart-line"></i> Monitoring and logging solutions</li>
             </ul>
         </section>
 
