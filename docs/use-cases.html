@@ -46,51 +46,106 @@
         this.voiceService = new VoiceService();
         this.nlp = new NLPProcessor();
         this.metrics = new CallMetrics();
+        this.cache = new Cache({ ttl: 3600 }); // 1 hour TTL
+        this.rateLimiter = new RateLimiter({
+            maxRequests: 100,
+            interval: '1m'
+        });
     }
 
     // Custom error types
     static CallHandlingError = class extends Error {
-        constructor(message, code) {
+        constructor(message, code, retryable = false) {
             super(message);
             this.name = 'CallHandlingError';
             this.code = code;
+            this.retryable = retryable;
         }
     };
 
     async handleIncomingCall(call) {
         try {
+            await this.rateLimiter.checkLimit('handleIncomingCall');
+
             if (!call?.id) {
                 throw new CallCenter.CallHandlingError(
                     'Invalid call object',
-                    'INVALID_CALL'
+                    'INVALID_CALL',
+                    false
                 );
             }
 
-            // Initial greeting
-            const greeting = await this.voiceService.generateSpeech({
-                text: "Thank you for calling. How can I help you today?",
-                voice: "customer_service_1",
-                speed: 1.0,
-                fallbackVoice: "default_1" // Fallback voice if primary unavailable
+            // Check cache for recent interactions
+            const cachedResponse = await this.cache.get(call.id);
+            if (cachedResponse) {
+                return cachedResponse;
+            }
+
+            // Initial greeting with retry mechanism
+            const greeting = await this.retry(
+                () => this.voiceService.generateSpeech({
+                    text: "Thank you for calling. How can I help you today?",
+                    voice: "customer_service_1",
+                    speed: 1.0,
+                    fallbackVoice: "default_1"
+                }),
+                {
+                    maxAttempts: 3,
+                    backoff: 'exponential',
+                    initialDelay: 1000
+                }
+            );
+            
+            // Process customer intent with noise reduction
+            const transcript = await this.voiceService.transcribe(call.audio, {
+                noiseReduction: true,
+                enhanceClarity: true,
+                model: 'latest'
+            });
+
+            const intent = await this.nlp.detectIntent(transcript, {
+                confidence: 0.8,
+                context: call.history
             });
             
-            // Process customer intent
-            const transcript = await this.voiceService.transcribe(call.audio);
-            const intent = await this.nlp.detectIntent(transcript);
-            
-            // Track metrics
-            await this.metrics.logInteraction({
+            // Track metrics with batching
+            await this.metrics.batchLog([{
+                type: 'interaction',
                 callId: call.id,
                 intent,
                 duration: call.duration,
-                timestamp: new Date().toISOString()
-            });
+                timestamp: new Date().toISOString(),
+                quality: call.quality
+            }]);
 
-            return this.routeCall(intent, call);
+            const result = await this.routeCall(intent, call);
+            
+            // Cache result for similar interactions
+            await this.cache.set(call.id, result);
+            
+            return result;
         } catch (error) {
             console.error(`Call handling error: ${error.message}`);
             await this.metrics.logError(error);
             return this.escalateToHuman(call, error);
+        }
+    }
+
+    async retry(fn, options) {
+        let attempt = 0;
+        while (attempt < options.maxAttempts) {
+            try {
+                return await fn();
+            } catch (error) {
+                attempt++;
+                if (attempt === options.maxAttempts) throw error;
+                
+                const delay = options.backoff === 'exponential' 
+                    ? options.initialDelay * Math.pow(2, attempt)
+                    : options.initialDelay;
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
         }
     }
 
@@ -103,24 +158,55 @@
         };
 
         const handler = handlers[intent.type] || this.escalateToHuman.bind(this);
-        return handler(call);
+        
+        // Add circuit breaker for external service calls
+        const circuitBreaker = new CircuitBreaker(handler, {
+            timeout: 5000,
+            errorThreshold: 50,
+            resetTimeout: 30000
+        });
+
+        return circuitBreaker.fire(call);
     }
 
     async escalateToHuman(call, error = null) {
         await this.metrics.logEscalation({
             callId: call.id,
             reason: error?.message || 'Unknown intent',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            retryable: error?.retryable || false
+        });
+        
+        // Find best available agent based on context
+        const agent = await this.findBestAgent({
+            intent: call.lastIntent,
+            language: call.language,
+            priority: error ? 'high' : 'normal'
         });
         
         return {
             action: 'transfer',
             department: 'customer_service',
+            agentId: agent.id,
             context: {
                 callHistory: call.history,
-                error: error?.message
+                error: error?.message,
+                customerProfile: await this.getCustomerProfile(call)
             }
         };
+    }
+
+    async getCustomerProfile(call) {
+        try {
+            return await this.cache.getOrSet(
+                `customer_${call.customerId}`,
+                () => this.customerService.getProfile(call.customerId),
+                { ttl: 3600 } // 1 hour cache
+            );
+        } catch (error) {
+            console.warn(`Failed to fetch customer profile: ${error.message}`);
+            return null;
+        }
     }
 }</code></pre>
                     <h4>Key Features</h4>
@@ -173,104 +259,181 @@ assistant.addResponse('greeting', {
         this.calendar = new CalendarAPI();
         this.patientRecords = new EMRSystem();
         this.notificationService = new NotificationService();
+        this.cache = new Cache({ ttl: 300 }); // 5 minutes TTL
+        this.rateLimiter = new RateLimiter({
+            maxRequests: 50,
+            interval: '1m'
+        });
     }
 
     // Custom error types
     static SchedulingError = class extends Error {
-        constructor(message, code) {
+        constructor(message, code, retryable = false) {
             super(message);
             this.name = 'SchedulingError';
             this.code = code;
+            this.retryable = retryable;
         }
     };
 
     async scheduleAppointment(patientRequest) {
+        const transaction = await this.startTransaction();
+        
         try {
+            await this.rateLimiter.checkLimit('scheduleAppointment');
+
             if (!patientRequest?.patientId) {
                 throw new MedicalScheduler.SchedulingError(
                     'Invalid patient request',
-                    'INVALID_REQUEST'
+                    'INVALID_REQUEST',
+                    false
                 );
             }
 
-            // Verify patient identity
-            const patient = await this.patientRecords.verifyPatient(
-                patientRequest.patientId,
-                { requireActive: true }
+            // Verify patient identity with retry
+            const patient = await this.retry(
+                () => this.patientRecords.verifyPatient(
+                    patientRequest.patientId,
+                    { 
+                        requireActive: true,
+                        verifyInsurance: true
+                    }
+                ),
+                {
+                    maxAttempts: 3,
+                    backoff: 'exponential'
+                }
             );
 
-            // Get available slots considering doctor availability
-            const slots = await this.calendar.getAvailableSlots({
-                doctorId: patient.primaryCare,
-                duration: patientRequest.duration || 30, // minutes
-                daysAhead: 7,
-                excludeHolidays: true,
-                considerPreferences: true
-            });
+            // Get available slots from cache or API
+            const slots = await this.cache.getOrSet(
+                `slots_${patient.primaryCare}_${new Date().toDateString()}`,
+                async () => {
+                    const availableSlots = await this.calendar.getAvailableSlots({
+                        doctorId: patient.primaryCare,
+                        duration: patientRequest.duration || 30,
+                        daysAhead: 7,
+                        excludeHolidays: true,
+                        considerPreferences: true,
+                        timezone: patient.timezone
+                    });
+
+                    return this.filterEligibleSlots(availableSlots, patient);
+                },
+                { ttl: 300 } // 5 minute cache
+            );
 
             if (!slots.length) {
                 throw new MedicalScheduler.SchedulingError(
                     'No available slots found',
-                    'NO_SLOTS'
+                    'NO_SLOTS',
+                    true
                 );
             }
 
-            // Present options to patient
-            const slotOptions = this.formatSlots(slots);
-            const confirmation = await this.voiceService.interact({
-                text: `I found these times available: ${slotOptions}. 
-                       Which time works best for you?`,
-                expectedResponseType: 'datetime',
-                confirmationRequired: true,
-                maxRetries: 3
-            });
+            // Present options to patient with timeout
+            const confirmation = await Promise.race([
+                this.voiceService.interact({
+                    text: `I found these times available: ${this.formatSlots(slots)}. 
+                           Which time works best for you?`,
+                    expectedResponseType: 'datetime',
+                    confirmationRequired: true,
+                    maxRetries: 3,
+                    language: patient.preferredLanguage
+                }),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Response timeout')), 30000)
+                )
+            ]);
 
-            // Book appointment and send confirmation
+            // Book appointment with transaction
             const booking = await this.processBooking(confirmation, patient);
             await this.sendConfirmation(booking, patient);
             
+            await transaction.commit();
             return booking;
         } catch (error) {
+            await transaction.rollback();
             console.error(`Scheduling error: ${error.message}`);
+            
             if (error instanceof MedicalScheduler.SchedulingError) {
                 throw error;
             }
+            
             throw new MedicalScheduler.SchedulingError(
                 'Unable to schedule appointment. Please try again.',
-                'SYSTEM_ERROR'
+                'SYSTEM_ERROR',
+                true
             );
         }
     }
 
+    async filterEligibleSlots(slots, patient) {
+        return slots.filter(slot => {
+            // Check insurance coverage for the slot's time
+            const isInsuranceCovered = this.checkInsuranceCoverage(slot, patient);
+            
+            // Check patient's preferred times
+            const isPreferredTime = this.checkPreferredTime(slot, patient);
+            
+            // Check historical attendance pattern
+            const isLikelyToAttend = this.checkAttendanceProbability(slot, patient);
+            
+            return isInsuranceCovered && isPreferredTime && isLikelyToAttend;
+        });
+    }
+
     async sendConfirmation(booking, patient) {
-        const message = `Your appointment is confirmed for 
-                        ${booking.datetime.toLocaleString()}`;
+        const message = await this.generateConfirmationMessage(booking, patient);
         
-        // Send confirmations in parallel
-        await Promise.all([
+        // Send confirmations in parallel with individual error handling
+        const results = await Promise.allSettled([
             this.voiceService.generateSpeech({ 
                 text: message,
-                voice: patient.preferredVoice || 'default'
+                voice: patient.preferredVoice || 'default',
+                language: patient.preferredLanguage
             }),
             this.calendar.sendReminder(booking),
             this.patientRecords.updateAppointments(patient.id, booking),
             this.notificationService.sendMultiChannel({
                 patient,
                 message,
-                channels: ['sms', 'email', 'voice']
+                channels: ['sms', 'email', 'voice'],
+                priority: 'high'
             })
         ]);
+
+        // Handle any failed notifications
+        results.forEach((result, index) => {
+            if (result.status === 'rejected') {
+                console.error(`Confirmation method ${index} failed:`, result.reason);
+                this.scheduleRetry('sendConfirmation', { booking, patient, methodIndex: index });
+            }
+        });
+    }
+
+    async generateConfirmationMessage(booking, patient) {
+        const baseMessage = `Your appointment is confirmed for 
+                           ${booking.datetime.toLocaleString()}`;
+        
+        return patient.preferredLanguage === 'en' 
+            ? baseMessage
+            : await this.voiceService.translate(baseMessage, patient.preferredLanguage);
     }
 
     formatSlots(slots) {
         return slots
-            .map(slot => slot.datetime.toLocaleString('en-US', {
-                weekday: 'long',
-                month: 'long',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit'
-            }))
+            .map(slot => slot.datetime.toLocaleString(
+                this.patientLocale || 'en-US',
+                {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                }
+            ))
             .join(', ');
     }
 }</code></pre>
