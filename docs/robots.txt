@@ -2,19 +2,48 @@ User-agent: *
 Allow: /
 Disallow: /assets/
 Disallow: /.htaccess
+Disallow: /search
+Disallow: /*?q=*
+Disallow: /*.json$
+Disallow: /*.xml$
+Disallow: /private/
+Disallow: /admin/
+Disallow: /tmp/
 
 Sitemap: https://aivoicetech.guide/sitemap.xml
 
 # Crawl-delay for heavy crawlers
 User-agent: AhrefsBot
 Crawl-delay: 10
+Disallow: /private/
+Disallow: /admin/
 
 User-agent: MJ12bot
 Crawl-delay: 10
+Disallow: /private/
+Disallow: /admin/
 
 User-agent: SemrushBot
 Crawl-delay: 10
+Disallow: /private/
+Disallow: /admin/
 
-# Disallow search-related pages
-Disallow: /search
-Disallow: /*?q=* 
+# Block AI training crawlers
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+# Block malicious bots
+User-agent: dotbot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: / 

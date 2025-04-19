@@ -14,7 +14,10 @@ RewriteRule ^(.*)$ $1.html [NC,L]
 Header set X-Content-Type-Options "nosniff"
 Header set X-Frame-Options "SAMEORIGIN"
 Header set X-XSS-Protection "1; mode=block"
-Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+Header set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+Header set Referrer-Policy "strict-origin-when-cross-origin"
+Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://*.amazonaws.com https://*.googleapis.com https://*.microsoft.com https://*.elevenlabs.io;"
 
 # Enable compression
 <IfModule mod_deflate.c>
@@ -30,6 +33,8 @@ Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
     ExpiresByType image/gif "access plus 1 year"
     ExpiresByType text/css "access plus 1 month"
     ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType application/json "access plus 1 day"
+    ExpiresByType text/xml "access plus 1 day"
 </IfModule>
 
 # Prevent directory listing
@@ -39,4 +44,14 @@ Options -Indexes
 <FilesMatch "^\.">
     Order allow,deny
     Deny from all
-</FilesMatch> 
+</FilesMatch>
+
+# Block access to specific file types
+<FilesMatch "\.(json|xml|env|config|log)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Custom error pages
+ErrorDocument 404 /404.html
+ErrorDocument 500 /500.html 

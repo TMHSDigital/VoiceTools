@@ -1,25 +1,43 @@
 [
     {
         "title": "AI Voice Technology Guide",
-        "url": "/index.html",
+        "url": "/",
         "content": "Comprehensive guide for implementing AI voice technology in business communications. Learn about voice synthesis, recognition, and automation.",
         "excerpt": "Get started with AI voice technology implementation..."
     },
     {
+        "title": "Quick Start Guide",
+        "url": "/quick-start",
+        "content": "Quick start guide for implementing AI voice technologies. Step-by-step instructions for getting started with voice synthesis and recognition.",
+        "excerpt": "Start implementing AI voice technology in minutes..."
+    },
+    {
         "title": "Phone Automation Guide",
-        "url": "/phone-automation.html",
+        "url": "/phone-automation",
         "content": "Complete guide to call center automation, IVR systems, and voice bots. Learn about implementing automated phone systems.",
         "excerpt": "Discover how to automate your call center operations..."
     },
     {
+        "title": "Voice Service Providers",
+        "url": "/voice-providers",
+        "content": "Compare leading AI voice service providers including Amazon Polly, Google Cloud TTS, Microsoft Azure, and Eleven Labs.",
+        "excerpt": "Find the perfect voice service provider for your needs..."
+    },
+    {
         "title": "Enterprise Solutions",
-        "url": "/enterprise.html",
+        "url": "/enterprise",
         "content": "Enterprise-grade voice technology solutions including system architecture, security, deployment, and monitoring.",
         "excerpt": "Scale your voice technology infrastructure..."
     },
     {
+        "title": "Technical Guides",
+        "url": "/technical-guides",
+        "content": "In-depth technical guides for implementing and optimizing AI voice technologies.",
+        "excerpt": "Master the technical aspects of voice technology..."
+    },
+    {
         "title": "Voice Technology Glossary",
-        "url": "/glossary.html",
+        "url": "/glossary",
         "content": "Comprehensive glossary of AI voice technology terms including ASR, TTS, NLP, Voice Synthesis, IVR, and more.",
         "excerpt": "Learn key terminology in voice technology..."
     }
