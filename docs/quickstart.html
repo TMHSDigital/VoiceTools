@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Start Guide - TMHS Digital</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <i class="fas fa-microphone-alt"></i>
+                <a href="index.html">TMHS Digital</a>
+            </div>
+            <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+            <ul>
+                <li><a href="quickstart.html"><i class="fas fa-rocket"></i> Quick Start</a></li>
+                <li><a href="voice-providers.html"><i class="fas fa-server"></i> Providers</a></li>
+                <li><a href="technical-guides.html"><i class="fas fa-code"></i> Technical Guides</a></li>
+                <li><a href="use-cases.html"><i class="fas fa-lightbulb"></i> Use Cases</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="content-card">
+            <h1><i class="fas fa-rocket"></i> Quick Start Guide</h1>
+            <p>Get started with implementing AI voice technologies in your applications quickly and efficiently.</p>
+        </section>
+
+        <section class="content-card">
+            <h2><i class="fas fa-list-ol"></i> Implementation Steps</h2>
+            
+            <div class="step-card">
+                <h3>1. Choose a Voice Provider</h3>
+                <p>Select an AI voice service provider based on your needs:</p>
+                <ul>
+                    <li>Consider factors like voice quality, language support, and pricing</li>
+                    <li>Review our <a href="voice-providers.html">Voice Providers comparison</a></li>
+                    <li>Test the service with sample content before committing</li>
+                </ul>
+            </div>
+
+            <div class="step-card">
+                <h3>2. Set Up Your Environment</h3>
+                <p>Prepare your development environment:</p>
+                <ul>
+                    <li>Sign up for your chosen provider's API access</li>
+                    <li>Obtain necessary API keys and credentials</li>
+                    <li>Install required SDKs or libraries</li>
+                </ul>
+            </div>
+
+            <div class="step-card">
+                <h3>3. Basic Implementation</h3>
+                <pre><code>// Example using ElevenLabs API
+const ELEVENLABS_API_KEY = 'your-api-key';
+const VOICE_ID = 'selected-voice-id';
+
+async function generateSpeech(text) {
+    const response = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'xi-api-key': ELEVENLABS_API_KEY
+            },
+            body: JSON.stringify({
+                text: text,
+                voice_settings: {
+                    stability: 0.75,
+                    similarity_boost: 0.75
+                }
+            })
+        }
+    );
+    
+    return await response.blob();
+}</code></pre>
+            </div>
+
+            <div class="step-card">
+                <h3>4. Test and Optimize</h3>
+                <p>Ensure quality and performance:</p>
+                <ul>
+                    <li>Test with various text inputs and lengths</li>
+                    <li>Monitor API usage and costs</li>
+                    <li>Implement error handling and fallbacks</li>
+                    <li>Optimize for your specific use case</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="content-card">
+            <h2><i class="fas fa-lightbulb"></i> Next Steps</h2>
+            <p>After basic implementation, explore:</p>
+            <ul>
+                <li><a href="technical-guides.html">Advanced Technical Guides</a> for detailed implementation</li>
+                <li><a href="use-cases.html">Use Cases</a> for real-world applications</li>
+                <li>Security best practices and performance optimization</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        <p>Copyright © 2025 TM Hospitality Strategies. All rights reserved.</p>
+        <p>This project is licensed under the <a href="../LICENSE">TM Hospitality Strategies License</a>.</p>
+    </footer>
+
+    <script>
+        function toggleMenu() {
+            const nav = document.querySelector('nav ul');
+            nav.classList.toggle('active');
+        }
+    </script>
+</body>
+</html> 

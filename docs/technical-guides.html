@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Guides - TMHS Digital</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <i class="fas fa-microphone-alt"></i>
+                <a href="index.html">TMHS Digital</a>
+            </div>
+            <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+            <ul>
+                <li><a href="quickstart.html"><i class="fas fa-rocket"></i> Quick Start</a></li>
+                <li><a href="voice-providers.html"><i class="fas fa-server"></i> Providers</a></li>
+                <li><a href="technical-guides.html"><i class="fas fa-code"></i> Technical Guides</a></li>
+                <li><a href="use-cases.html"><i class="fas fa-lightbulb"></i> Use Cases</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="content-card">
+            <h1><i class="fas fa-code"></i> Technical Guides</h1>
+            <p>Detailed implementation guides, best practices, and code examples for developers.</p>
+        </section>
+
+        <section class="content-card">
+            <h2><i class="fas fa-book"></i> Implementation Guides</h2>
+            
+            <div class="guide-card">
+                <h3>Voice Generation API Integration</h3>
+                <div class="guide-content">
+                    <h4>Authentication</h4>
+                    <pre><code>// Initialize the API client
+const client = new VoiceAPI({
+    apiKey: process.env.API_KEY,
+    baseURL: 'https://api.provider.com/v1'
+});</code></pre>
+                    
+                    <h4>Error Handling</h4>
+                    <pre><code>try {
+    const audio = await generateSpeech(text);
+    return audio;
+} catch (error) {
+    if (error.response?.status === 429) {
+        // Handle rate limiting
+        await delay(1000);
+        return generateSpeech(text);
+    }
+    throw new Error(`Speech generation failed: ${error.message}`);
+}</code></pre>
+                </div>
+            </div>
+
+            <div class="guide-card">
+                <h3>Voice Processing and Optimization</h3>
+                <div class="guide-content">
+                    <h4>Audio Format Conversion</h4>
+                    <pre><code>const convertAudio = async (buffer, format) => {
+    const ffmpeg = require('fluent-ffmpeg');
+    return new Promise((resolve, reject) => {
+        ffmpeg()
+            .input(buffer)
+            .toFormat(format)
+            .on('end', resolve)
+            .on('error', reject)
+            .save('output.' + format);
+    });
+};</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="content-card">
+            <h2><i class="fas fa-shield-alt"></i> Security Best Practices</h2>
+            
+            <div class="guide-card">
+                <h3>API Key Management</h3>
+                <ul>
+                    <li>Store API keys in environment variables</li>
+                    <li>Use key rotation for production environments</li>
+                    <li>Implement API key access controls</li>
+                    <li>Monitor API key usage and set alerts</li>
+                </ul>
+            </div>
+
+            <div class="guide-card">
+                <h3>Rate Limiting and Quotas</h3>
+                <pre><code>class RateLimiter {
+    constructor(maxRequests, timeWindow) {
+        this.maxRequests = maxRequests;
+        this.timeWindow = timeWindow;
+        this.requests = [];
+    }
+
+    async checkLimit() {
+        const now = Date.now();
+        this.requests = this.requests.filter(
+            time => now - time < this.timeWindow
+        );
+        
+        if (this.requests.length >= this.maxRequests) {
+            throw new Error('Rate limit exceeded');
+        }
+        
+        this.requests.push(now);
+        return true;
+    }
+}</code></pre>
+            </div>
+        </section>
+
+        <section class="content-card">
+            <h2><i class="fas fa-tachometer-alt"></i> Performance Optimization</h2>
+            
+            <div class="guide-card">
+                <h3>Caching Strategies</h3>
+                <pre><code>const cache = new Map();
+
+async function getCachedAudio(text, options) {
+    const key = `${text}-${JSON.stringify(options)}`;
+    
+    if (cache.has(key)) {
+        return cache.get(key);
+    }
+
+    const audio = await generateSpeech(text, options);
+    cache.set(key, audio);
+    return audio;
+}</code></pre>
+            </div>
+
+            <div class="guide-card">
+                <h3>Batch Processing</h3>
+                <pre><code>async function batchProcess(texts, concurrency = 3) {
+    const results = [];
+    for (let i = 0; i < texts.length; i += concurrency) {
+        const batch = texts.slice(i, i + concurrency);
+        const promises = batch.map(text => generateSpeech(text));
+        results.push(...await Promise.all(promises));
+    }
+    return results;
+}</code></pre>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Copyright © 2025 TM Hospitality Strategies. All rights reserved.</p>
+        <p>This project is licensed under the <a href="../LICENSE">TM Hospitality Strategies License</a>.</p>
+    </footer>
+
+    <script>
+        function toggleMenu() {
+            const nav = document.querySelector('nav ul');
+            nav.classList.toggle('active');
+        }
+    </script>
+</body>
+</html> 
